@@ -1,0 +1,10 @@
+#+TITLE: sleepyeyes
+
+Data and R analysis scripts from a study on lexical competition, sleep, and memory consolidation with Weighall, Henderson, Cairney, and Gaskell
+
+* Contents of the respository
+
+| [[file:gazedatafiles/][=gazedatafiles/=]] | subdirectory containing all raw data files |
+
+- all data files were recorded with a Tobii T120 eyetracker sampling at 60 Hz
+- all analyses were performed in R version 3.1.2, and require the following add-on packages: =plyr=, =dplyr=, =tidyr=, =Rcpp=, =ggplot2=
