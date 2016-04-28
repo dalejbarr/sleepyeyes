@@ -1,0 +1,335 @@
+* Plotting the results
+
+#+NAME: plot_base
+#+BEGIN_SRC R
+  <<libs>>
+  library("ggplot2")
+
+  <<agg_fns>>
+  <<clust_fns2>>
+  <<get_dp_aligned>>
+
+  orig <- dp_subj %>% agg_up2(TRUE) %>%
+      mutate(CompType = factor(CompType), Cond = factor(Cond),
+             ms = round(1000 * (FID / 60)))
+
+  boot_mx <-
+      replicate(1000, dp_subj %>% boot_by_unit("Subject") %>% agg_up2())
+
+  boot_ci <- apply(boot_mx, 1, quantile, probs = c(.025, .975))
+
+  orig[["LL"]] <- boot_ci["2.5%", ]
+  orig[["UL"]] <- boot_ci["97.5%", ]
+
+  orig2 <- orig %>%
+      inner_join(cond_lookup, "Cond") %>%
+      inner_join(group_lookup, "Group") %>%
+      mutate(Group = paste0(toupper(substr(Group, 1, 1)),
+                 substr(Group, 2,
+                        sapply(as.character(orig[["Group"]]), nchar))),
+             CompType = factor(paste(CompType, "Competitor", sep = " ")))
+
+#+END_SRC
+
+** Main plot
+
+#+HEADER: :file dp_aligned.pdf :width 10 :height 7
+#+BEGIN_SRC R :exports results :results output graphics :tangle dp_aligned_plot.R
+  <<plot_base>>
+
+  main_plot <- ggplot(orig2,
+         aes(ms, p)) +
+             geom_line(aes(color = Condition)) +
+             geom_point(aes(shape = Condition, color = Condition)) +
+             geom_ribbon(aes(ymin = LL, ymax = UL, fill = Condition),
+                         alpha = .2, color = NA) +
+             facet_wrap(Group2 ~ CompType) +
+             coord_cartesian(xlim = c(-550, 1550)) +
+             xlab("Time from Disambiguation Point (ms)") +
+             ylab("Proportion of Looks") +
+             theme(axis.text.x = element_text(angle = 90, size = 8, hjust = 1,
+                                              vjust = .5))
+
+  main_plot
+#+END_SRC
+
+#+RESULTS:
+[[file:dp_aligned.pdf]]
+
+* Plot sub-effects
+
+** Group by Competition
+
+#+HEADER: :file dp_aligned_group_by_comp.pdf :width 10 :height 5
+#+BEGIN_SRC R :exports results :results output graphics :tangle dp_aligned_plot.R
+  <<libs>>
+  library("ggplot2")
+
+  <<agg_fns>>
+  <<clust_fns2>>
+  <<get_dp_aligned>>
+
+  cmatch <- data_frame(Cond = c("CompAbsent", "CompPresent",
+                           "Consolidated", "Unconsolidated", "Untrained"),
+                       Competition = c("Untrained/Control", "Competitor",
+                           "Competitor", "Competitor", "Untrained/Control"))
+
+  agg_up3 <- function(x, full = FALSE) {
+      ff <- group_by(x, Group, Competition, FID) %>%
+          summarize(C = sum(C), N = sum(NC)) %>%
+          ungroup() %>%
+          mutate(p = C / (C + N))
+      if (full) ff else {ff %>% `[[`("p")}
+  }
+
+  dp_subj2 <- inner_join(dp_subj, cmatch, "Cond")
+
+  orig <- dp_subj2 %>%
+      agg_up3(TRUE) %>%
+      mutate(ms = round(1000 * (FID / 60)))
+
+  boot_mx <-
+      replicate(1000, dp_subj2 %>% boot_by_unit("Subject") %>% agg_up3())
+
+  boot_ci <- apply(boot_mx, 1, quantile, probs = c(.025, .975))
+
+  orig[["LL"]] <- boot_ci["2.5%", ]
+  orig[["UL"]] <- boot_ci["97.5%", ]
+
+  orig2 <- orig %>%
+      inner_join(group_lookup, "Group") %>%
+      mutate(Group = paste0(toupper(substr(Group, 1, 1)),
+                 substr(Group, 2,
+                        sapply(as.character(orig[["Group"]]), nchar))))
+
+  gxc_ann <- data_frame(x = 0L, xmin = -250, xmax = 250, y = .25)
+
+  g_by_c <- ggplot(orig2,
+                   aes(ms, p)) +
+             geom_line(aes(color = Group, shape = Competition)) +
+             geom_point(aes(shape = Competition, color = Group), size = 2) +
+             geom_ribbon(aes(ymin = LL, ymax = UL, fill = Group, shape = Competition),
+                         alpha = .2, color = NA) +
+             geom_text(x = 0, y = .26, label = "Group x Competition", size = 3.5) +
+             geom_errorbarh(aes(x = x, y = y, xmin = xmin, xmax = xmax), gxc_ann,
+                            height = .005) +
+             coord_cartesian(xlim = c(-550, 1550)) +
+             xlab("Time from Disambiguation Point (ms)") +
+             ylab("Proportion of Looks") +
+             theme(axis.text.x = element_text(angle = 90, size = 8, hjust = 1,
+                                              vjust = .5))
+
+  g_by_c
+#+END_SRC
+
+#+RESULTS:
+[[file:dp_aligned_group_by_comp.pdf]]
+
+** Type by Competitor
+
+#+HEADER: :file dp_aligned_type_by_comp.pdf :width 10 :height 5
+#+BEGIN_SRC R :exports results :results output graphics :tangle dp_aligned_plot.R
+  <<libs>>
+  library("ggplot2")
+
+  <<agg_fns>>
+  <<clust_fns2>>
+  <<get_dp_aligned>>
+
+  cond_matchup <- data_frame(Cond = c("CompAbsent", "CompPresent",
+                                 "Consolidated", "Unconsolidated", "Untrained"),
+                             Competitor = c("Untrained/Control", "Competitor",
+                                 "Competitor", "Competitor", "Untrained/Control"))
+
+  agg_up4 <- function(x, full = FALSE) {
+      ff <- x %>%
+          inner_join(cond_matchup, "Cond") %>%
+          group_by(CompType, Competitor, FID) %>%
+          summarize(C = sum(C), N = sum(NC)) %>%
+          ungroup() %>%
+          mutate(p = C / (C + N)) %>%
+          rename(Type = CompType, Competition = Competitor)
+      if (full) ff else {ff %>% `[[`("p")}
+  }
+
+  orig <- dp_subj %>% agg_up4(TRUE) %>%
+      mutate(ms = round(1000 * (FID / 60)))
+
+  boot_mx <-
+      replicate(1000, dp_subj %>% boot_by_unit("Subject") %>% agg_up4())
+
+  boot_ci <- apply(boot_mx, 1, quantile, probs = c(.025, .975))
+
+  orig[["LL"]] <- boot_ci["2.5%", ]
+  orig[["UL"]] <- boot_ci["97.5%", ]
+
+  # txc_ann <- data_frame(x = 0L, xmin = -250, xmax = 250, y = .25)
+  txc_ann <- data_frame(x = 600L, xmin = 500L, xmax = 700L, y = .17)
+
+  t_by_c <- ggplot(orig,
+         aes(ms, p)) +
+             geom_line(aes(color = Type, shape = Competition)) +
+             geom_point(aes(shape = Competition, color = Type), size = 2) +
+             geom_ribbon(aes(ymin = LL, ymax = UL, fill = Type,
+                             shape = Competition),
+                         alpha = .2, color = NA) +
+             geom_text(x = 600, y = .18, label = "Type x Competition", size = 3.5) +
+             geom_errorbarh(aes(x = x, y = y, xmin = xmin, xmax = xmax), txc_ann,
+                            height = .005) +
+             coord_cartesian(xlim = c(-550, 1550)) +
+             xlab("Time from Disambiguation Point (ms)") +
+             ylab("Proportion of Looks") +
+             theme(axis.text.x = element_text(angle = 90, size = 8, hjust = 1,
+                                              vjust = .5))
+
+  t_by_c
+#+END_SRC
+
+#+RESULTS:
+[[file:dp_aligned_type_by_comp.pdf]]
+
+
+	
+* Overall analysis
+
+#+BEGIN_SRC R :exports results :results value :colnames yes
+  library("plyr")
+  library("dplyr")
+  library("tidyr")
+
+  ## Note: coding of predictor variables was as follows:
+  ##
+  ##      G (Group)      :      adult = .5,   child = -.5
+  ##     CM (Competition): competitor = .5, control = -.5
+  ##     CT (CompType)   :        new = .5, existing = -.5
+  ##
+  ## and logodds model (fit by multinom) was
+  ##   cbind(C, NC) ~ G * CM * CT
+  ##   so C was the baseline, s.t. negative means more looks
+  ##   to competitor than control (counterintuitive but ok)
+
+  <<clust_fns2>>
+
+  ## orig <- "preDP_overall_CR_analysis_orig_by_subj.rds"
+  ## pvals <- "preDP_overall_CR_analysis_orig_pvals_by_subj.rds"
+  ## pmx_1 <- "preDP_overall_CR_analysis_group_by_subj.rds"
+  ## pmx_2 <- "preDP_overall_CR_analysis_competition_by_subj.rds"
+
+  DP_overall_clust_subj <-
+      cluster_pvalues("DP_overall_CR_analysis_orig_by_subj.rds",
+                      "DP_overall_CR_analysis_orig_pvals_by_subj.rds",
+                      "DP_overall_CR_analysis_group_by_subj.rds",
+                      "DP_overall_CR_analysis_competition_by_subj.rds") %>%
+      mutate(Unit = "Subject",
+             begin = as.integer(1000 * (as.integer(t0) / 60)),
+             end = as.integer(1000 * (as.integer(t1) / 60))) %>%
+      rename(p = pval, mpe = mpe, cms = cms) %>%
+      select(-t0, -t1)
+
+  DP_overall_clust_item <-
+      cluster_pvalues("DP_overall_CR_analysis_orig_by_item.rds",
+                      "DP_overall_CR_analysis_orig_pvals_by_item.rds",
+                      "DP_overall_CR_analysis_comptype_by_item.rds",
+                      "DP_overall_CR_analysis_competition_by_item.rds") %>%
+      mutate(Unit = "Item",
+             begin = as.integer(1000 * (as.integer(t0) / 60)),
+             end = as.integer(1000 * (as.integer(t1) / 60))) %>%
+      rename(p = pval, mpe = mpe, cms = cms) %>%
+      select(-t0, -t1)
+
+  ##DP_overall <- bind_rows(preDP_overall_clust_subj,
+   ##                       preDP_overall_clust_item) %>%
+    ##                          arrange(Effect, begin)
+
+  bind_rows(DP_overall_clust_subj,
+            DP_overall_clust_item) %>%
+     arrange(Effect, begin, desc(Unit), p) %>%
+     mutate(p = round(p, 3),
+            mpe = round(mpe, 3), cms = round(cms, 3)) %>%
+     select(Effect, Unit, p, begin, end, cms, mpe)
+#+END_SRC
+
+#+RESULTS:
+| Effect  | Unit    |     p | begin |  end |     cms |    mpe |
+|---------+---------+-------+-------+------+---------+--------|
+| CM      | Subject | 0.005 |  -100 |   50 | 163.547 | -0.392 |
+| CM      | Item    | 0.001 |  -100 | 1100 | 668.484 | -0.571 |
+| CM      | Subject | 0.001 |   350 | 1100 | 516.071 |  -0.65 |
+| CM      | Subject | 0.317 |  1300 | 1350 |  17.415 | -0.476 |
+| CT:CM   | Item    | 0.014 |   450 |  750 |  115.24 |  0.706 |
+| CT:CM   | Subject | 0.013 |   500 |  700 |  77.869 | -0.819 |
+| CT:CM   | Subject | 0.239 |  1300 | 1350 |  19.296 | -1.223 |
+| G       | Subject | 0.001 |     0 | 1100 | 451.883 |  0.591 |
+| G       | Subject | 0.108 |  1300 | 1350 |  35.004 |  0.881 |
+| G:CM    | Subject | 0.002 |  -250 |  200 | 126.016 | -0.427 |
+| G:CM    | Item    | 0.042 |  -150 |    0 |  41.775 | -0.493 |
+| G:CM    | Item    | 0.642 |   100 |  100 |   6.321 | -0.496 |
+| G:CT    | Item    | 0.093 |  -300 |    0 |  61.081 | -0.352 |
+| G:CT    | Subject | 0.071 |  -250 |  -50 |  40.457 |  0.382 |
+| G:CT    | Item    | 0.405 |   100 |  200 |  24.441 | -0.354 |
+| G:CT    | Subject | 0.243 |   150 |  200 |  15.538 |  0.386 |
+| G:CT:CM | Item    | 0.302 |   250 |  400 |  32.295 |  0.682 |
+| G:CT:CM | Item    | 0.438 |   500 |  600 |  22.348 |  0.875 |
+| G:CT:CM | Subject | 0.419 |   550 |  550 |   7.233 | -0.997 |
+
+* Consolidation analysis
+
+#+BEGIN_SRC R :colnames yes
+  library("plyr")
+  library("dplyr")
+  library("tidyr")
+
+  ## Note:
+  ## This analysis compares consolidated to unconsolidated
+  ## Note: coding of predictor variables was as follows:
+  ##
+  ##      G (Group)        :        adult = .5,          child = -.5
+  ##     CS (Consolidation): consolidated = .5, unconsolidated = -.5
+
+  <<clust_fns2>>
+
+  ## preDP
+  DP_clust_subj <-
+      cluster_pvalues("DP_consolidation_CR_analysis_orig_by_subj.rds",
+                      "DP_consolidation_CR_analysis_orig_pvals_by_subj.rds",
+                      "DP_consolidation_CR_analysis_by_subj.rds",
+                      NULL,
+                      efflist = c("CS", "G:CS")) %>%
+      mutate(Unit = "Subj")
+
+  ## postDP
+  DP_clust_item <-
+      cluster_pvalues("DP_consolidation_CR_analysis_orig_by_item.rds",
+                      "DP_consolidation_CR_analysis_orig_pvals_by_item.rds",
+                      "DP_consolidation_CR_analysis_by_item.rds",
+                      NULL,
+                      efflist = c("CS", "G:CS")) %>%
+      mutate(Unit = "Item")
+
+  bind_rows(DP_clust_subj, DP_clust_item) %>%
+      mutate(begin = round(1000 * (as.integer(t0) / 60)),
+             end = round(1000 * (as.integer(t1) / 60)),
+             p = round(pval, 3),
+             mpe = round(mpe, 3),
+             cms = round(cms, 3)) %>%
+      select(Effect, Unit, p, begin, end, mpe, cms) %>%
+      arrange(Effect, begin, desc(Unit), desc(p))
+#+END_SRC
+
+#+RESULTS:
+| Effect | Unit |     p | begin |  end |    mpe |    cms |
+|--------+------+-------+-------+------+--------+--------|
+| CS     | Subj | 0.313 |  -500 | -450 | -0.238 |  17.47 |
+| CS     | Item |  0.34 |  -500 | -450 | -0.238 | 13.209 |
+| CS     | Subj | 0.548 |  -200 | -200 | -0.203 |  6.335 |
+| CS     | Item | 0.522 |  -200 | -200 | -0.203 |  6.069 |
+| CS     | Subj | 0.512 |  -100 | -100 | -0.208 |  6.616 |
+| CS     | Item | 0.366 |  -100 |  -50 | -0.199 | 12.575 |
+| CS     | Subj | 0.341 |   950 | 1000 |  -0.37 | 15.152 |
+| CS     | Item | 0.179 |   950 | 1100 | -0.341 | 27.799 |
+| G:CS   | Item | 0.037 |   200 |  500 |  0.487 |  59.08 |
+| G:CS   | Subj | 0.341 |   250 |  300 |  0.519 | 14.092 |
+| G:CS   | Subj | 0.429 |   500 |  500 |  0.538 |  7.653 |
+| G:CS   | Subj | 0.479 |   850 |  850 |  0.685 |  6.758 |
+| G:CS   | Item | 0.424 |   850 |  850 |  0.685 |  8.178 |
+
