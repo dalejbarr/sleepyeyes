@@ -887,80 +887,80 @@ Two bash shell scripts which will run all of the analyses in batch from *-nix co
 ** Overall analysis
 
 #+BEGIN_SRC R :exports results :results value :colnames yes
-   library("plyr")
-   library("dplyr")
-   library("tidyr")
+  library("plyr")
+  library("dplyr")
+  library("tidyr")
 
-   ## Note: coding of predictor variables was as follows:
-   ##
-   ##      G (Group)      :      adult = .5,   child = -.5
-   ##     CM (Competition): competitor = .5, control = -.5
-   ##     CT (CompType)   :        new = .5, existing = -.5
-   ##
-   ## and logodds model (fit by multinom) was
-   ##   cbind(C, NC) ~ G * CM * CT
-   ##   so C was the baseline, s.t. negative means more looks
-   ##   to competitor than control (counterintuitive but ok)
+  ## Note: coding of predictor variables was as follows:
+  ##
+  ##      G (Group)      :      adult = .5,   child = -.5
+  ##     CM (Competition): competitor = .5, control = -.5
+  ##     CT (CompType)   :        new = .5, existing = -.5
+  ##
+  ## and logodds model (fit by multinom) was
+  ##   cbind(C, NC) ~ G * CM * CT
+  ##   so C was the baseline, s.t. negative means more looks
+  ##   to competitor than control (counterintuitive but ok)
 
-   <<clust_fns2>>
+  <<clust_fns2>>
 
-   ## orig <- "preDP_overall_CR_analysis_orig_by_subj.rds"
-   ## pvals <- "preDP_overall_CR_analysis_orig_pvals_by_subj.rds"
-   ## pmx_1 <- "preDP_overall_CR_analysis_group_by_subj.rds"
-   ## pmx_2 <- "preDP_overall_CR_analysis_competition_by_subj.rds"
+  ## orig <- "preDP_overall_CR_analysis_orig_by_subj.rds"
+  ## pvals <- "preDP_overall_CR_analysis_orig_pvals_by_subj.rds"
+  ## pmx_1 <- "preDP_overall_CR_analysis_group_by_subj.rds"
+  ## pmx_2 <- "preDP_overall_CR_analysis_competition_by_subj.rds"
 
-   DP_overall_clust_subj <-
-       cluster_pvalues("derived/results/DP_overall_CR_analysis_orig_by_subj.rds",
-                       "derived/results/DP_overall_CR_analysis_orig_pvals_by_subj.rds",
-                       "derived/results/DP_overall_CR_analysis_group_by_subj.rds",
-                       "derived/results/DP_overall_CR_analysis_competition_by_subj.rds") %>%
-       mutate(Unit = "Subject",
-							begin = as.integer(1000 * (as.integer(t0) / 60)),
-							end = as.integer(1000 * (as.integer(t1) / 60))) %>%
-       rename(p = pval, mpe = mpe, cms = cms) %>%
-       select(-t0, -t1)
+  DP_overall_clust_subj <-
+      cluster_pvalues("derived/results/DP_overall_CR_analysis_orig_by_subj.rds",
+                      "derived/results/DP_overall_CR_analysis_orig_pvals_by_subj.rds",
+                      "derived/results/DP_overall_CR_analysis_group_by_subj.rds",
+                      "derived/results/DP_overall_CR_analysis_competition_by_subj.rds") %>%
+      mutate(Unit = "Subject",
+             begin = as.integer(1000 * (as.integer(t0) / 60)),
+             end = as.integer(1000 * (as.integer(t1) / 60))) %>%
+      rename(p = pval, mpe = mpe, cms = cms) %>%
+      select(-t0, -t1)
 
-   DP_overall_clust_item <-
-       cluster_pvalues("derived/results/DP_overall_CR_analysis_orig_by_item.rds",
-                       "derived/results/DP_overall_CR_analysis_orig_pvals_by_item.rds",
-                       "derived/results/DP_overall_CR_analysis_comptype_by_item.rds",
-                       "derived/results/DP_overall_CR_analysis_competition_by_item.rds") %>%
-       mutate(Unit = "Item",
-							begin = as.integer(1000 * (as.integer(t0) / 60)),
-							end = as.integer(1000 * (as.integer(t1) / 60))) %>%
-       rename(p = pval, mpe = mpe, cms = cms) %>%
-       select(-t0, -t1)
+  DP_overall_clust_item <-
+      cluster_pvalues("derived/results/DP_overall_CR_analysis_orig_by_item.rds",
+                      "derived/results/DP_overall_CR_analysis_orig_pvals_by_item.rds",
+                      "derived/results/DP_overall_CR_analysis_comptype_by_item.rds",
+                      "derived/results/DP_overall_CR_analysis_competition_by_item.rds") %>%
+      mutate(Unit = "Item",
+             begin = as.integer(1000 * (as.integer(t0) / 60)),
+             end = as.integer(1000 * (as.integer(t1) / 60))) %>%
+      rename(p = pval, mpe = mpe, cms = cms) %>%
+      select(-t0, -t1)
 
-   bind_rows(DP_overall_clust_subj,
-             DP_overall_clust_item) %>%
-			arrange(Effect, begin, desc(Unit), p) %>%
-			mutate(p = round(p, 3),
-             mpe = round(mpe, 3), cms = round(cms, 3)) %>%
-			select(Effect, Unit, p, begin, end, cms, mpe)
+  bind_rows(DP_overall_clust_subj,
+            DP_overall_clust_item) %>%
+     arrange(Effect, begin, desc(Unit), p) %>%
+     mutate(p = round(p, 3),
+            mpe = round(mpe, 3), cms = round(cms, 3)) %>%
+     select(Effect, Unit, p, begin, end, cms, mpe)
 #+END_SRC
 
 #+RESULTS:
- | Effect  | Unit    |     p | begin |  end |     cms |    mpe |
- |---------+---------+-------+-------+------+---------+--------|
- | CM      | Subject | 0.005 |  -100 |   50 | 163.547 | -0.392 |
- | CM      | Item    | 0.001 |  -100 | 1100 | 668.484 | -0.571 |
- | CM      | Subject | 0.001 |   350 | 1100 | 516.071 |  -0.65 |
- | CM      | Subject | 0.317 |  1300 | 1350 |  17.415 | -0.476 |
- | CT:CM   | Item    | 0.014 |   450 |  750 |  115.24 |  0.706 |
- | CT:CM   | Subject | 0.013 |   500 |  700 |  77.869 | -0.819 |
- | CT:CM   | Subject | 0.239 |  1300 | 1350 |  19.296 | -1.223 |
- | G       | Subject | 0.001 |     0 | 1100 | 451.883 |  0.591 |
- | G       | Subject | 0.108 |  1300 | 1350 |  35.004 |  0.881 |
- | G:CM    | Subject | 0.002 |  -250 |  200 | 126.016 | -0.427 |
- | G:CM    | Item    | 0.042 |  -150 |    0 |  41.775 | -0.493 |
- | G:CM    | Item    | 0.642 |   100 |  100 |   6.321 | -0.496 |
- | G:CT    | Item    | 0.093 |  -300 |    0 |  61.081 | -0.352 |
- | G:CT    | Subject | 0.071 |  -250 |  -50 |  40.457 |  0.382 |
- | G:CT    | Item    | 0.405 |   100 |  200 |  24.441 | -0.354 |
- | G:CT    | Subject | 0.243 |   150 |  200 |  15.538 |  0.386 |
- | G:CT:CM | Item    | 0.302 |   250 |  400 |  32.295 |  0.682 |
- | G:CT:CM | Item    | 0.438 |   500 |  600 |  22.348 |  0.875 |
- | G:CT:CM | Subject | 0.419 |   550 |  550 |   7.233 | -0.997 |
+| Effect  | Unit    |     p | begin |  end |     cms |    mpe |
+|---------+---------+-------+-------+------+---------+--------|
+| CM      | Subject | 0.005 |  -100 |   50 | 163.547 | -0.392 |
+| CM      | Item    | 0.001 |  -100 | 1100 | 668.484 | -0.571 |
+| CM      | Subject | 0.001 |   350 | 1100 | 516.071 |  -0.65 |
+| CM      | Subject | 0.317 |  1300 | 1350 |  17.415 | -0.476 |
+| CT:CM   | Item    | 0.014 |   450 |  750 |  115.24 |  0.706 |
+| CT:CM   | Subject | 0.013 |   500 |  700 |  77.869 | -0.819 |
+| CT:CM   | Subject | 0.239 |  1300 | 1350 |  19.296 | -1.223 |
+| G       | Subject | 0.001 |     0 | 1100 | 451.883 |  0.591 |
+| G       | Subject | 0.108 |  1300 | 1350 |  35.004 |  0.881 |
+| G:CM    | Subject | 0.002 |  -250 |  200 | 126.016 | -0.427 |
+| G:CM    | Item    | 0.042 |  -150 |    0 |  41.775 | -0.493 |
+| G:CM    | Item    | 0.642 |   100 |  100 |   6.321 | -0.496 |
+| G:CT    | Item    | 0.093 |  -300 |    0 |  61.081 | -0.352 |
+| G:CT    | Subject | 0.071 |  -250 |  -50 |  40.457 |  0.382 |
+| G:CT    | Item    | 0.405 |   100 |  200 |  24.441 | -0.354 |
+| G:CT    | Subject | 0.243 |   150 |  200 |  15.538 |  0.386 |
+| G:CT:CM | Item    | 0.302 |   250 |  400 |  32.295 |  0.682 |
+| G:CT:CM | Item    | 0.438 |   500 |  600 |  22.348 |  0.875 |
+| G:CT:CM | Subject | 0.419 |   550 |  550 |   7.233 | -0.997 |
 
 ** Consolidation analysis
 
