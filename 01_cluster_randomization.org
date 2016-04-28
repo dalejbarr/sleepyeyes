@@ -42,8 +42,8 @@ Two bash shell scripts which will run all of the analyses in batch from *-nix co
 * Main analysis
 ** Cluster setup for parallel processing
 
- #+NAME: our_cluster
- #+BEGIN_SRC R :tangle scripts/cluster_setup.R
+#+NAME: our_cluster
+#+BEGIN_SRC R :tangle scripts/cluster_setup.R
    library("parallel")
 
    ## start the computing cluster
@@ -52,32 +52,32 @@ Two bash shell scripts which will run all of the analyses in batch from *-nix co
    ## cl <- makeCluster(rep(c("localhost", "gossip", "yap", "chatter"),
    ##                      c(6, 6, 8, 8)))
    cl <- makeCluster(detectCores())
- #+END_SRC
+#+END_SRC
 
- #+NAME: start_cluster
- #+BEGIN_SRC R 
+#+NAME: start_cluster
+#+BEGIN_SRC R 
    source("scripts/cluster_setup.R")  # defines 'cl', cores for parallel computing
- #+END_SRC
+#+END_SRC
 
- #+NAME: stop_cluster
- #+BEGIN_SRC R
+#+NAME: stop_cluster
+#+BEGIN_SRC R
    stopCluster(cl)
- #+END_SRC
+#+END_SRC
 
 ** Libraries
 
- #+NAME: libs
- #+BEGIN_SRC R
+#+NAME: libs
+#+BEGIN_SRC R
    library("dplyr")
    library("tidyr")
- #+END_SRC
+#+END_SRC
 
 ** General functions
 
 *** Functions for aggregating and bootstrapping
 
- #+NAME: overall_fns
- #+BEGIN_SRC R
+#+NAME: overall_fns
+#+BEGIN_SRC R
    fit_mnom <- function(x, form = cbind(C, NC) ~ G * CT * CM) {
        junk <- capture.output(
            mod <- nnet::multinom(form, x)
@@ -126,10 +126,10 @@ Two bash shell scripts which will run all of the analyses in batch from *-nix co
        all_var %>%
            inner_join(all_but_var, join_fields)
    }
- #+END_SRC
+#+END_SRC
 
- #+NAME: agg_fns
- #+BEGIN_SRC R
+#+NAME: agg_fns
+#+BEGIN_SRC R
    bin_up <- function(x, tdat2, unit = "Subject") {
        agg <- x %>%
            inner_join(tdat2, "TrialID") %>%
@@ -193,12 +193,12 @@ Two bash shell scripts which will run all of the analyses in batch from *-nix co
                              between(ms, rx[["xmin"]], rx[["xmax"]])) %>%
                                  `[[`("UL") %>% max())
    }
- #+END_SRC
+#+END_SRC
 
 *** Functions for cluster randomization
 
- #+NAME: clust_fns2
- #+BEGIN_SRC R
+#+NAME: clust_fns2
+#+BEGIN_SRC R
    bin_comp <- function(x, tdat2, unit) {
        ff <- x %>% inner_join(tdat2, "TrialID") %>%
            mutate(Comp = ifelse(ID == "Comp", "C", "NC")) %>%
@@ -336,13 +336,12 @@ Two bash shell scripts which will run all of the analyses in batch from *-nix co
            inner_join(clust2)
    }
 
- #+END_SRC
-
+#+END_SRC
 
 ** Align the data
 
- #+NAME: get_dp_aligned
- #+BEGIN_SRC R
+#+NAME: get_dp_aligned
+#+BEGIN_SRC R
    ## add 200 ms to account for EM delay (for adults)
    tdat2 <- readRDS("derived/trial_data.rds") %>%
        as_data_frame() %>%
@@ -393,8 +392,7 @@ Two bash shell scripts which will run all of the analyses in batch from *-nix co
 
    group_lookup <- data_frame(Group = factor(c("adult", "child")),
 															Group2 = factor(c("Adults", "Children")))
- #+END_SRC
-
+#+END_SRC
 
 ** Overall analysis
 
@@ -402,7 +400,7 @@ Two bash shell scripts which will run all of the analyses in batch from *-nix co
 
 **** by group
 
- #+BEGIN_SRC R :tangle scripts/01_CR_subj_group.R
+#+BEGIN_SRC R :tangle scripts/01_CR_subj_group.R
    library("plyr")
    <<libs>>
 
@@ -446,11 +444,11 @@ Two bash shell scripts which will run all of the analyses in batch from *-nix co
    <<stop_cluster>>
 
    saveRDS(cms_px, file = "derived/results/DP_overall_CR_analysis_group_by_subj.rds")
- #+END_SRC
+#+END_SRC
 
 **** by competition
 
- #+BEGIN_SRC R :tangle scripts/01_CR_subj_competition.R
+#+BEGIN_SRC R :tangle scripts/01_CR_subj_competition.R
    library("plyr")
    <<libs>>
 
@@ -487,14 +485,13 @@ Two bash shell scripts which will run all of the analyses in batch from *-nix co
    <<stop_cluster>>
 
    saveRDS(cms_px, file = "derived/results/DP_overall_CR_analysis_competition_by_subj.rds")
- #+END_SRC
-
+#+END_SRC
 
 *** Treating items as random factors
 
 **** by comptype
 
- #+BEGIN_SRC R :tangle scripts/01_CR_item_comptype.R
+#+BEGIN_SRC R :tangle scripts/01_CR_item_comptype.R
    library("plyr")
    <<libs>>
 
@@ -538,11 +535,11 @@ Two bash shell scripts which will run all of the analyses in batch from *-nix co
    <<stop_cluster>>
 
    saveRDS(cts_px, file = "derived/results/DP_overall_CR_analysis_comptype_by_item.rds")
- #+END_SRC
+#+END_SRC
 
 **** by competition
 
- #+BEGIN_SRC R :tangle scripts/01_CR_item_competition.R
+#+BEGIN_SRC R :tangle scripts/01_CR_item_competition.R
    library("plyr")
    <<libs>>
 
@@ -580,13 +577,13 @@ Two bash shell scripts which will run all of the analyses in batch from *-nix co
    <<stop_cluster>>
 
    saveRDS(cms_px, file = "derived/results/DP_overall_CR_analysis_competition_by_item.rds")
- #+END_SRC
+#+END_SRC
 
 ** Consolidation analysis
 
 *** by subject
 
- #+BEGIN_SRC R :tangle scripts/01_CR_subj_consolidation.R
+#+BEGIN_SRC R :tangle scripts/01_CR_subj_consolidation.R
    library("plyr")
    <<libs>>
 
@@ -641,11 +638,11 @@ Two bash shell scripts which will run all of the analyses in batch from *-nix co
    <<stop_cluster>>
 
    saveRDS(cms_px, file = "derived/results/DP_consolidation_CR_analysis_by_subj.rds")
- #+END_SRC
+#+END_SRC
 
 *** by item
 
- #+BEGIN_SRC R :tangle scripts/01_CR_item_consolidation.R
+#+BEGIN_SRC R :tangle scripts/01_CR_item_consolidation.R
    library("plyr")
    <<libs>>
 
@@ -700,12 +697,12 @@ Two bash shell scripts which will run all of the analyses in batch from *-nix co
    <<stop_cluster>>
 
    saveRDS(cms_px, file = "derived/results/DP_consolidation_CR_analysis_by_item.rds")
- #+END_SRC
+#+END_SRC
 
 ** Consolidation analysis with time factor collapsed
 
- #+HEADER: :results value :colnames yes
- #+BEGIN_SRC R :tangle scripts/01_CR_consolidation_collapsed.R :exports results
+#+HEADER: :results value :colnames yes
+#+BEGIN_SRC R :tangle scripts/01_CR_consolidation_collapsed.R :exports results
    library("plyr")
    <<libs>>
 
@@ -833,9 +830,9 @@ Two bash shell scripts which will run all of the analyses in batch from *-nix co
    saveRDS(results, file = "derived/results/DP_consolidation_collapsed_results.rds")
 
    data_frame(Effect = names(results), pvalue = round(results, 3))
- #+END_SRC
+#+END_SRC
 
- #+RESULTS:
+#+RESULTS:
  | Effect        | pvalue |
  |---------------+--------|
  | subj.CS       |  0.007 |
@@ -849,7 +846,7 @@ Two bash shell scripts which will run all of the analyses in batch from *-nix co
 
 ** Consolidation effect by subject
 
- #+BEGIN_SRC R
+#+BEGIN_SRC R
    library("dplyr")
    library("tidyr")
 
@@ -880,7 +877,7 @@ Two bash shell scripts which will run all of the analyses in batch from *-nix co
        mutate(diff = Consolidated - Unconsolidated)
 
    write.csv(ceff2, file = "derived/consolidation_effect.csv", row.names = FALSE)
- #+END_SRC
+#+END_SRC
 
 * Print results
 	
