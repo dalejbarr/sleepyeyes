@@ -4,7 +4,55 @@ Data and R analysis scripts from a study on lexical competition, sleep, and memo
 
 * Contents of the respository
 
-| [[file:gazedatafiles/][=gazedatafiles/=]] | subdirectory containing all raw data files |
+| [[file:gazedatafiles/][gazedata/]]      | subdirectory containing all raw data files (385 MB) |
 
 - all data files were recorded with a Tobii T120 eyetracker sampling at 60 Hz
 - all analyses were performed in R version 3.1.2, and require the following add-on packages: =plyr=, =dplyr=, =tidyr=, =Rcpp=, =ggplot2=
+
+* Codebook for .gazedata files
+
+| Field Name                | Description                                                                                                                                     |
+|---------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------|
+| =Subject= 		            | subject number                                                                                                                                  |
+| =Session=			           | session (first or second)                                                                                                                       |
+| =ID=			                | row number                                                                                                                                      |
+| =TETTime=			           | Tobii EyeTracker Time : this is the timestamp for every row                                                                                     |
+| =RTTime=			            | similar to TETTime, but not in microseconds                                                                                                     |
+| =CursorX=			           | x position of the mouse cursor                                                                                                                  |
+| =CursorY=			           | y position of the mouse cursor                                                                                                                  |
+| =TimestampSec=		        | timestamp in seconds                                                                                                                            |
+| =TimestampMicrosec=	     | timestamp in microseconds                                                                                                                       |
+| =XGazePosLeftEye=		     | x position of the left eye                                                                                                                      |
+| =YGazePosLeftEye=		     | y position of the left eye                                                                                                                      |
+| =XCameraPosLeftEye=	     | x camera position left eye                                                                                                                      |
+| =YCameraPosLeftEye=	     | y camera position left eye                                                                                                                      |
+| =DiameterPupilLeftEye=	  | diameter of the left pupil                                                                                                                      |
+| =DistanceLeftEye=		     | distance between left eye and Tobii monitor (normally around 60 cm)                                                                             |
+| =ValidityLeftEye=		     | gives a number referring to the quality of the eyes (0 is very good, 4 is worst and -1 means Tobii could not find the eyes due to e.g. a blink) |
+| =XGazePosRightEye=	      | x position of the right eye                                                                                                                     |
+| =YGazePosRightEye=	      | y position of the right eye                                                                                                                     |
+| =XCameraPosRightEye=	    | x camera position right eye                                                                                                                     |
+| =YCameraPosRightEye=	    | y camera position right eye                                                                                                                     |
+| =DiameterPupilRightEye=	 | diameter of the right pupil                                                                                                                     |
+| =DistanceRightEye=	      | distance between right eye and Tobii monitor                                                                                                    |
+| =ValidityRightEye=	      | gives a number referring to the quality of the eyes (0 is very good, 4 is worst and -1 means Tobii could not find the eyes due to e.g. a blink) |
+| =TrialId=			           | number of the item in the specific list                                                                                                         |
+| =AOI1=			              | image in the upper left corner                                                                                                                  |
+| =AOI2=			              | image in the upper right corner                                                                                                                 |
+| =AOI3=			              | image in the bottom left corner                                                                                                                 |
+| =AOI4=			              | image in the bottom right corner                                                                                                                |
+| =AOI=			               | refers to a number where the person was looking it at that specific timestamp (1,2,3, and 4)                                                    |
+| =AOIStimulus=		         | refers to the name of the picture corresponding to the location (1,2,3,4) the person was looking at                                             |
+| =CRESP=			             | correct response                                                                                                                                |
+| =RESP=			              | actual response                                                                                                                                 |
+| =ACC=			               | response accuracy                                                                                                                               |
+| =RT=			                | behavioural reaction time (time of the mouse-click)                                                                                             |
+| =Condition=		           | condition name                                                                                                                                  |
+| =Gender=			            | variable 1                                                                                                                                      |
+| =Colour=			            | variable 2                                                                                                                                      |
+| =item=			              | item number                                                                                                                                     |
+| =Stimulus=		            | name of the target picture                                                                                                                      |
+| =StimPlace=		           | place on the screen of the target picture                                                                                                       |
+| =Competitor=		          | name of the competitor picture                                                                                                                  |
+| =CompPlace=		           | place on the screen of the competitor picture                                                                                                   |
+| =UserDefined_1=		       | defines whether the object on screen was part of a fixation or a StimSlide (i.e. the real trial)                                                |
